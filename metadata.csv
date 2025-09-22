@@ -1,0 +1,79 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+try:
+    df = pd.read_csv("metadata.csv", low_memory=False)
+    print("✅ Dataset loaded successfully!")
+except FileNotFoundError:
+    print("❌ File not found. Make sure metadata.csv is in the same folder.")
+    df = None
+
+if df is not None:
+    # Show first rows
+    print("\nFirst 5 rows:")
+    print(df.head())
+
+    # Dataset structure
+    print("\nDataset Info:")
+    print(df.info())
+
+    # Missing values
+    print("\nMissing values:")
+    print(df.isnull().sum().head(20))
+
+    # -----------------------------
+    # Task 2: Data Cleaning
+    # -----------------------------
+    # Keep only useful columns
+    df_clean = df[["title", "abstract", "publish_time", "journal", "authors"]].copy()
+
+    # Drop rows without title
+    df_clean = df_clean.dropna(subset=["title"])
+
+    # Convert publish_time to datetime
+    df_clean["publish_time"] = pd.to_datetime(df_clean["publish_time"], errors="coerce")
+
+    # Drop rows without date
+    df_clean = df_clean.dropna(subset=["publish_time"])
+
+    print("\n✅ Cleaned dataset shape:", df_clean.shape)
+
+    # -----------------------------
+    # Task 3: Basic Analysis
+    # -----------------------------
+    print("\nMost common journals:")
+    print(df_clean["journal"].value_counts().head(10))
+
+    print("\nPublication years:")
+    print(df_clean["publish_time"].dt.year.value_counts().sort_index())
+
+    # -----------------------------
+    # Task 4: Visualizations
+    # -----------------------------
+
+    # 1. Publications over time
+    plt.figure(figsize=(10,5))
+    df_clean["publish_time"].dt.year.value_counts().sort_index().plot(kind="line")
+    plt.title("Publications Over Time")
+    plt.xlabel("Year")
+    plt.ylabel("Number of Publications")
+    plt.show()
+
+    # 2. Top journals by publication count
+    plt.figure(figsize=(10,5))
+    df_clean["journal"].value_counts().head(10).plot(kind="bar")
+    plt.title("Top 10 Journals in CORD-19 Dataset")
+    plt.xlabel("Journal")
+    plt.ylabel("Number of Publications")
+    plt.xticks(rotation=45)
+    plt.show()
+
+    # 3. Word count distribution in abstracts
+    df_clean["abstract_length"] = df_clean["abstract"].fillna("").apply(lambda x: len(x.split()))
+    plt.figure(figsize=(10,5))
+    sns.histplot(df_clean["abstract_length"], bins=50, kde=True)
+    plt.title("Distribution of Abstract Lengths")
+    plt.xlabel("Number of Words")
+    plt.ylabel("Frequency")
+    plt.show()
